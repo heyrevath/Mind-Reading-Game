@@ -51,10 +51,10 @@ def gameplay():
     valid_entries = ["0","1"]
     while True:
         predict = prediction()
-        user_input = input("Enter either 0 or 1")
+        user_input = input("Enter either 0 or 1: ")
         while user_input not in valid_entries:
             print("Invalid Input")
-            user_input = input("Enter either 0 or 1")
+            user_input = input("Enter either 0 or 1: ")
         user_input = int(user_input)
         update_inputs(user_input)
         update_scores(user_input, predict)
@@ -64,5 +64,6 @@ def gameplay():
         elif scores[1] == 20:
             print("Congrats You Won!")
             break
+
 
 gameplay()
