@@ -11,11 +11,16 @@ if "initialized" not in st.session_state:
     st.session_state.inputs = np.zeros((2, 2, 2), dtype=int)
     st.session_state.scores = [0, 0]  # [computer, player]
     st.session_state.game_over = False
+    st.session_state.history = []
     st.session_state.initialized = True
 
 
-# ---------- Game Logic ----------
-def prediction():
+# ---------- AI Prediction Logic ----------
+def predict_easy():
+    return random.randint(0, 1)
+
+
+def predict_medium():
     inputs = st.session_state.inputs
     l1 = st.session_state.last_1
     l2 = st.session_state.last_2
@@ -25,6 +30,32 @@ def prediction():
     return random.randint(0, 1)
 
 
+def predict_hard():
+    # Pattern-based prediction
+    pattern_pred = predict_medium()
+
+    # Frequency-based prediction
+    if len(st.session_state.history) >= 5:
+        ones = st.session_state.history.count(1)
+        zeros = st.session_state.history.count(0)
+        freq_pred = 1 if ones > zeros else 0
+    else:
+        freq_pred = random.randint(0, 1)
+
+    # Combine both predictions
+    return pattern_pred if random.random() < 0.7 else freq_pred
+
+
+def get_prediction(mode):
+    if mode == "Easy":
+        return predict_easy()
+    elif mode == "Medium":
+        return predict_medium()
+    else:
+        return predict_hard()
+
+
+# ---------- Game Logic ----------
 def update_inputs(current):
     inputs = st.session_state.inputs
     l1 = st.session_state.last_1
@@ -52,14 +83,18 @@ def reset_game():
     st.session_state.last_2 = 0
     st.session_state.inputs = np.zeros((2, 2, 2), dtype=int)
     st.session_state.scores = [0, 0]
+    st.session_state.history = []
     st.session_state.game_over = False
 
 
 # ---------- UI ----------
-st.title("🧠 Mind Reading Game")
-st.write(
-    "Choose **0** or **1**. "
-    "The computer will try to predict your move using past patterns."
+st.title("🧠 Mind Reading Game (AI Mode)")
+st.write("The computer adapts its prediction strategy based on difficulty level.")
+
+difficulty = st.selectbox(
+    "🎯 Select AI Difficulty",
+    ["Easy", "Medium", "Hard (AI)"],
+    disabled=st.session_state.scores != [0, 0]
 )
 
 player_choice = st.radio(
@@ -70,14 +105,16 @@ player_choice = st.radio(
 )
 
 if st.button("▶️ Play Move", disabled=st.session_state.game_over):
-    computer_prediction = prediction()
-    update_inputs(player_choice)
-    update_scores(player_choice, computer_prediction)
+    prediction = get_prediction(difficulty)
 
-    st.info(f"🤖 Computer predicted: **{computer_prediction}**")
+    st.session_state.history.append(player_choice)
+    update_inputs(player_choice)
+    update_scores(player_choice, prediction)
+
+    st.info(f"🤖 AI predicted: **{prediction}**")
 
     if st.session_state.scores[0] == 20:
-        st.error("💻 Computer Wins!")
+        st.error("💻 AI Wins!")
         st.session_state.game_over = True
     elif st.session_state.scores[1] == 20:
         st.success("🎉 You Won!")
@@ -92,7 +129,7 @@ with col1:
     st.metric("👤 Player", st.session_state.scores[1])
 
 with col2:
-    st.metric("💻 Computer", st.session_state.scores[0])
+    st.metric("🤖 AI", st.session_state.scores[0])
 
 
 # ---------- Reset ----------
